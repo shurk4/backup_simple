@@ -71,12 +71,17 @@ void MainWindow::showTask(int row)
     ui->labelName->setText(taskName);
     ui->labelSourcePath->setText(settings.value("sourcePath").toString());
     ui->labelCopyPath->setText(settings.value("copyPath").toByteArray());
-    setDays(settings.value("days").toInt());
     lineEditTaskName->setText(taskName);
+    setDays(settings.value("days").toInt());
+    ui->labelDays->setText(getDaysString(settings.value("days").toInt()));
+    setType(settings.value("type").toInt());
+    lineEditCopyNum->setValue(settings.value("copysNum").toInt());
+
     settings.endGroup();
     settings.endGroup();
 
     ui->actionAddTask->setText("Сохранить");
+    taskShowed = false;
 }
 
 void MainWindow::readReg()
@@ -111,12 +116,12 @@ void MainWindow::showTasksTable()
 
     ui->tableWidget->setRowCount(keys.size());
     ui->tableWidget->setColumnCount(6);
-    ui->tableWidget->setHorizontalHeaderLabels(QStringList() << " " << "Имя" << "Пусть источник" << "Путь копии" << "Дни" << "E");
+    ui->tableWidget->setHorizontalHeaderLabels(QStringList() << " " << "Имя" << "Пусть источник" << "Путь копии" << "Дни" << "Тип");
     ui->tableWidget->setColumnWidth(0, 5);
     ui->tableWidget->setColumnWidth(1, 70);
     ui->tableWidget->setColumnWidth(2, 120);
     ui->tableWidget->setColumnWidth(3, 120);
-    ui->tableWidget->setColumnWidth(4, 50);
+    ui->tableWidget->setColumnWidth(4, 120);
     for(int i = 0 ; i < keys.size(); i++)
     {
         settings.beginGroup(keys[i]);
@@ -136,17 +141,25 @@ void MainWindow::showTasksTable()
 
         item = new QTableWidgetItem();
         item->setText(settings.value("sourcePath").toString());
+        item->setToolTip(settings.value("sourcePath").toString());
         ui->tableWidget->setItem(i, 2, item);
 
         item = new QTableWidgetItem();
         item->setText(settings.value("copyPath").toString());
+        item->setToolTip(settings.value("copyPath").toString());
         ui->tableWidget->setItem(i, 3, item);
 
         item = new QTableWidgetItem();
-        item->setText(QString::number(settings.value("days").toInt()));
+        item->setText(getDaysString(settings.value("days").toInt()));
         ui->tableWidget->setItem(i, 4, item);
+
+        item = new QTableWidgetItem();
+        item->setText(getTypeString(settings.value("type").toInt()));
+        ui->tableWidget->setItem(i, 5, item);
         settings.endGroup();
     }
+
+    taskShowed = true;
 }
 
 void MainWindow::clearTaskInfo()
@@ -170,6 +183,30 @@ int MainWindow::getSelectedType()
         type = MIRROR;
     }
     return type;
+}
+
+void MainWindow::setType(int type)
+{
+    if(type == COPY)
+    {
+        ui->pushButtonTypeCopy->setChecked(true);
+    }
+    else
+    {
+        ui->pushButtonTypeMirror->setChecked(true);
+    }
+}
+
+QString MainWindow::getTypeString(int type)
+{
+    if(type == COPY)
+    {
+        return "Копия";
+    }
+    else
+    {
+        return "Зеркало";
+    }
 }
 
 int MainWindow::getSelectedDays()
@@ -219,6 +256,54 @@ int MainWindow::getSelectedDays()
     return day;
 }
 
+QString MainWindow::getDaysString(int days)
+{
+    QString day = "";
+
+    if(days & ALL)
+    {
+        day += "Каждый день";
+        return day;
+    }
+
+    if(days & MON)
+    {
+        day += "Пн ";
+    }
+
+    if(days & TUE)
+    {
+        day += "Вт ";
+    }
+
+    if(days & WED)
+    {
+        day += "Ср ";
+    }
+
+    if(days & THU)
+    {
+        day += "Чт ";
+    }
+
+    if(days & FRI)
+    {
+        day += "Пт ";
+    }
+
+    if(days & SAT)
+    {
+        day += "Сб ";
+    }
+
+    if(days & SUN)
+    {
+        day += "Вс ";
+    }
+
+    ui->labelDays->setText(day);
+}
+
 void MainWindow::resetDays()
 {
     ui->pushButtonDay1->setChecked(false);
@@ -233,56 +318,48 @@ void MainWindow::resetDays()
 void MainWindow::setDays(int days)
 {
     QString day = "";
+    resetDays();
 
-    if(days && ALL)
+    if(days & ALL)
     {
         ui->pushButtonDay1->setChecked(true);
-        day += "Каждый день";
+        return;
     }
 
-    if(days && MON)
+    if(days & MON)
     {
         ui->pushButtonDay1->setChecked(true);
-        day += "Пн ";
     }
 
-    if(days && TUE)
+    if(days & TUE)
     {
         ui->pushButtonDay2->setChecked(true);
-        day += "Вт ";
     }
 
-    if(days && WED)
+    if(days & WED)
     {
         ui->pushButtonDay3->setChecked(true);
-        day += "Ср ";
     }
 
-    if(days && THU)
+    if(days & THU)
     {
         ui->pushButtonDay4->setChecked(true);
-        day += "Чт ";
     }
 
-    if(days && FRI)
+    if(days & FRI)
     {
         ui->pushButtonDay5->setChecked(true);
-        day += "Пт ";
     }
 
-    if(days && SAT)
+    if(days & SAT)
     {
         ui->pushButtonDay6->setChecked(true);
-        day += "Сб ";
     }
 
-    if(days && SUN)
+    if(days & SUN)
     {
         ui->pushButtonDay7->setChecked(true);
-        day += "Вс ";
     }
-
-    ui->labelDays->setText(day);
 }
 
 void MainWindow::checkDaysButton(QPushButton *button)
@@ -466,7 +543,6 @@ void MainWindow::on_pushButtonTypeCopy_clicked(bool checked)
     }
 }
 
-
 void MainWindow::on_pushButtonTypeMirror_clicked(bool checked)
 {
     if(checked)
@@ -479,5 +555,20 @@ void MainWindow::on_actionNewTask_triggered()
 {
     clearTaskInfo();
     ui->actionAddTask->setText("Добавить");
+}
+
+
+void MainWindow::on_pushButtonStartSheduler_clicked()
+{
+    if(sheduler != nullptr)
+    {
+        sheduler->deleteLater();
+    }
+
+    sheduler = new Sheduler();
+    shedulerThread = new QThread();
+
+    sheduler->moveToThread(shedulerThread);
+    shedulerThread->start();
 }
 

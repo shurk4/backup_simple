@@ -129,13 +129,6 @@
       </property>
      </widget>
     </item>
-    <item row="4" column="2">
-     <widget class="QPushButton" name="pushButtonWriteBase">
-      <property name="text">
-       <string>Записать базу</string>
-      </property>
-     </widget>
-    </item>
     <item row="8" column="1" colspan="3">
      <widget class="QWidget" name="widgetDays" native="true">
       <layout class="QGridLayout" name="gridLayout_2">
@@ -374,6 +367,13 @@
       </property>
      </widget>
     </item>
+    <item row="4" column="2" colspan="2">
+     <widget class="QPushButton" name="pushButtonStartSheduler">
+      <property name="text">
+       <string>Запустить планировщик</string>
+      </property>
+     </widget>
+    </item>
    </layout>
   </widget>
   <widget class="QMenuBar" name="menubar">
@@ -382,7 +382,7 @@
      <x>0</x>
      <y>0</y>
      <width>794</width>
-     <height>24</height>
+     <height>23</height>
     </rect>
    </property>
   </widget>

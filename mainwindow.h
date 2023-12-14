@@ -11,27 +11,26 @@
 #include <QSettings>
 #include <QMap>
 #include <QDebug>
-//#include <QSqlDatabase>
-//#include <QSqlQuery>
-//#include <QSqlTableModel>
 
-enum Type
-{
-    COPY,
-    MIRROR
-};
+#include "sheduler.h"
 
-enum Days
-{
-    MON = 1,
-    TUE = 2,
-    WED = 4,
-    THU = 8,
-    FRI = 16,
-    SAT = 32,
-    SUN = 64,
-    ALL = 128
-};
+//enum Type
+//{
+//    COPY,
+//    MIRROR
+//};
+
+//enum Days
+//{
+//    MON = 1,
+//    TUE = 2,
+//    WED = 4,
+//    THU = 8,
+//    FRI = 16,
+//    SAT = 32,
+//    SUN = 64,
+//    ALL = 128
+//};
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -91,6 +90,8 @@ private slots:
 
     void on_actionNewTask_triggered();
 
+    void on_pushButtonStartSheduler_clicked();
+
 private:
     Ui::MainWindow *ui;
 
@@ -98,6 +99,11 @@ private:
     QLineEdit *lineEditTaskName = nullptr;
     QSpinBox *lineEditCopyNum = nullptr;
     QWidgetAction *actionLabelName = nullptr;
+
+    Sheduler *sheduler = nullptr;
+    QThread *shedulerThread = nullptr;
+
+    bool taskShowed = false;
 
     void hideWidgets();
 
@@ -112,7 +118,10 @@ private:
     void clearTaskInfo();
 
     int getSelectedType();
+    void setType(int type);
+    QString getTypeString(int type);
     int getSelectedDays();
+    QString getDaysString(int days);
     void resetDays();
     void setDays(int days);
     void checkDaysButton(QPushButton *button);
