@@ -18,7 +18,11 @@ set(PROJECT_SOURCES
         mainwindow.h
         mainwindow.ui
 
+        sheduler.h
+        sheduler.cpp
 
+        task.h
+        task.cpp
 
 )
 
@@ -41,7 +45,6 @@ else()
     else()
         add_executable(backup_simple
             ${PROJECT_SOURCES}
-            sheduler.h sheduler.cpp
 
         )
     endif()

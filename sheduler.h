@@ -5,34 +5,12 @@
 #include <QSettings>
 #include <QDebug>
 #include <QThread>
+#include <QDateTime>
+#include <QTimer>
+#include <QThreadPool>
+#include <QMutex>
 
-enum Type
-{
-    COPY,
-    MIRROR
-};
-
-enum Days
-{
-    MON = 1,
-    TUE = 2,
-    WED = 4,
-    THU = 8,
-    FRI = 16,
-    SAT = 32,
-    SUN = 64,
-    ALL = 128
-};
-
-struct TaskInfo
-{
-    QString name;
-    QString sourcePath;
-    QString copyPath;
-    int days;
-    int type;
-    int copyNum;
-};
+#include "task.h"
 
 class Sheduler : public QObject
 {
@@ -45,18 +23,29 @@ public:
     void debugSettings();
 
 signals:
+    void saveRegSignal();
 
 public slots:
     void update();
+    void saveRegSlot();
 //    void runTask();
+
+private slots:
+    void timerAlarm();
 
 private:
     QMap<QString, TaskInfo> tasks;
 
+    QTimer *timer;
+    void startTimer();
+
+    QMutex mutex;
+
     bool ready = false;
 
     void updateSettings();
-
+    void checkTasks();
+    void runTask(QString name);
 };
 
 #endif // SHEDULER_H

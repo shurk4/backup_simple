@@ -11,6 +11,8 @@ MainWindow::MainWindow(QWidget *parent)
     readReg();
 
     hideWidgets();
+
+    runSheduler();
 }
 
 MainWindow::~MainWindow()
@@ -34,7 +36,7 @@ void MainWindow::setActions()
     actionName = new QWidgetAction(this);
 
     lineEditTaskName = new QLineEdit(this);
-    lineEditTaskName->setMaximumWidth(200);
+    lineEditTaskName->setMaximumWidth(100);
     lineEditTaskName->setPlaceholderText("Введите имя задания");
     actionName->setDefaultWidget(lineEditTaskName);
     ui->toolBar->insertAction(ui->actionSourcePath, actionName);
@@ -76,12 +78,15 @@ void MainWindow::showTask(int row)
     ui->labelDays->setText(getDaysString(settings.value("days").toInt()));
     setType(settings.value("type").toInt());
     lineEditCopyNum->setValue(settings.value("copysNum").toInt());
+    ui->lineEditH->setText(settings.value("time").toTime().toString("hh"));
+    ui->lineEditM->setText(settings.value("time").toTime().toString("mm"));
 
     settings.endGroup();
     settings.endGroup();
 
+    ui->widgetDays->show();
+    ui->widgetType->show();
     ui->actionAddTask->setText("Сохранить");
-    taskShowed = false;
 }
 
 void MainWindow::readReg()
@@ -100,11 +105,13 @@ void MainWindow::writeReg()
             settings.setValue("days", getSelectedDays());
             settings.setValue("type", getSelectedType());
             settings.setValue("copysNum", lineEditCopyNum->text().toInt());
+            settings.setValue("time", getTime());
         settings.endGroup();
     settings.endGroup();
 
     clearTaskInfo();
     showTasksTable();
+    emit shedulerUpdate();
 }
 
 void MainWindow::showTasksTable()
@@ -115,13 +122,15 @@ void MainWindow::showTasksTable()
     QStringList keys = settings.childGroups();
 
     ui->tableWidget->setRowCount(keys.size());
-    ui->tableWidget->setColumnCount(6);
-    ui->tableWidget->setHorizontalHeaderLabels(QStringList() << " " << "Имя" << "Пусть источник" << "Путь копии" << "Дни" << "Тип");
+    ui->tableWidget->setColumnCount(7);
+    ui->tableWidget->setHorizontalHeaderLabels(QStringList() << " " << "Имя" << "Пусть источник" << "Путь копии" << "Дни" << "Время" << "Тип");
     ui->tableWidget->setColumnWidth(0, 5);
-    ui->tableWidget->setColumnWidth(1, 70);
-    ui->tableWidget->setColumnWidth(2, 120);
-    ui->tableWidget->setColumnWidth(3, 120);
-    ui->tableWidget->setColumnWidth(4, 120);
+    ui->tableWidget->setColumnWidth(1, 60);
+    ui->tableWidget->setColumnWidth(2, 110);
+    ui->tableWidget->setColumnWidth(3, 110);
+    ui->tableWidget->setColumnWidth(4, 100);
+    ui->tableWidget->setColumnWidth(5, 45);
+    ui->tableWidget->setColumnWidth(6, 60);
     for(int i = 0 ; i < keys.size(); i++)
     {
         settings.beginGroup(keys[i]);
@@ -154,12 +163,16 @@ void MainWindow::showTasksTable()
         ui->tableWidget->setItem(i, 4, item);
 
         item = new QTableWidgetItem();
-        item->setText(getTypeString(settings.value("type").toInt()));
+        QTime taskTime = settings.value("time").toTime();
+        item->setText(taskTime.toString("hh:mm"));
         ui->tableWidget->setItem(i, 5, item);
+
+        item = new QTableWidgetItem();
+        item->setText(getTypeString(settings.value("type").toInt()));
+        ui->tableWidget->setItem(i, 6, item);
+
         settings.endGroup();
     }
-
-    taskShowed = true;
 }
 
 void MainWindow::clearTaskInfo()
@@ -302,6 +315,8 @@ QString MainWindow::getDaysString(int days)
     }
 
     ui->labelDays->setText(day);
+
+    return day;
 }
 
 void MainWindow::resetDays()
@@ -370,6 +385,19 @@ void MainWindow::checkDaysButton(QPushButton *button)
         resetDays();
         button->setChecked(true);
     }
+}
+
+QTime MainWindow::getTime()
+{
+    QTime taskTime;
+    qDebug() << "ui->lineEditH->text() + \":\" + ui->lineEditM->text() - " << ui->lineEditH->text() + ":" + ui->lineEditM->text();
+    taskTime = QTime::fromString(ui->lineEditH->text() + ":" + ui->lineEditM->text(), "h:m");
+    if(!taskTime.isValid())
+    {
+        qDebug() << "Time is not valid";
+    }
+    qDebug() << "Time: " << taskTime.toString("h:m");
+    return taskTime;
 }
 
 void MainWindow::createActionCopyNum()
@@ -557,9 +585,35 @@ void MainWindow::on_actionNewTask_triggered()
     ui->actionAddTask->setText("Добавить");
 }
 
-
-void MainWindow::on_pushButtonStartSheduler_clicked()
+void MainWindow::on_pushButtonUpdate_clicked()
 {
+    emit shedulerUpdate();
+}
+
+void MainWindow::update()
+{
+    showTasksTable();
+}
+
+void MainWindow::resetTasks()
+{
+    QSettings settings("ShurkSoft", "Simple BackUp");
+
+    settings.beginGroup("Tasks");
+    QStringList keys = settings.childGroups();
+    for(int i = 0 ; i < keys.size(); i++)
+    {
+        settings.beginGroup(keys[i]);
+
+        settings.setValue("proceed", false);
+
+        settings.endGroup();
+    }
+}
+
+void MainWindow::runSheduler()
+{
+    qDebug() << "Start sheduler from main thread: " << QThread::currentThreadId();
     if(sheduler != nullptr)
     {
         sheduler->deleteLater();
@@ -567,8 +621,9 @@ void MainWindow::on_pushButtonStartSheduler_clicked()
 
     sheduler = new Sheduler();
     shedulerThread = new QThread();
+    connect(this, &MainWindow::shedulerUpdate, sheduler, &Sheduler::update);
+    connect(sheduler, &Sheduler::saveRegSignal, this, &MainWindow::update);
 
     sheduler->moveToThread(shedulerThread);
     shedulerThread->start();
 }
-

@@ -11,6 +11,7 @@
 #include <QSettings>
 #include <QMap>
 #include <QDebug>
+#include <QTime>
 
 #include "sheduler.h"
 
@@ -90,7 +91,13 @@ private slots:
 
     void on_actionNewTask_triggered();
 
-    void on_pushButtonStartSheduler_clicked();
+    void on_pushButtonUpdate_clicked();
+
+public slots:
+    void update();
+
+signals:
+    void shedulerUpdate();
 
 private:
     Ui::MainWindow *ui;
@@ -103,7 +110,9 @@ private:
     Sheduler *sheduler = nullptr;
     QThread *shedulerThread = nullptr;
 
-    bool taskShowed = false;
+    void resetTasks();
+
+    void runSheduler();
 
     void hideWidgets();
 
@@ -120,11 +129,14 @@ private:
     int getSelectedType();
     void setType(int type);
     QString getTypeString(int type);
+
     int getSelectedDays();
     QString getDaysString(int days);
     void resetDays();
     void setDays(int days);
     void checkDaysButton(QPushButton *button);
+
+    QTime getTime();
 
     void createActionCopyNum();
 
