@@ -1,9 +1,21 @@
+/*
+Остановился на создании хешей для проверки перемещения или удаления файла.
+Задуманная логика:
+    во время основного прохода зеркального копирования
+    проверяем текущий исходные файл на наличие его в списках, если его нет, добавляем.
+
+    во время проверки зеркальной коппии на удалённые, перемещённые и переименованные файлы
+    проверяем нет ли хеша этого файла в списке хешей, если есть - переносим копии по новому пути, если нет - значит файл был удалён, создаём его копию в папку времени
+
+
+*/
+
 #ifndef TASK_H
 #define TASK_H
 
 #include <QObject>
 #include <QRunnable>
-#include <QTimer>
+//#include <QTimer>
 #include <QDebug>
 #include <QThread>
 #include <QDateTime>
@@ -59,24 +71,26 @@ public slots:
     void timerAlarm();
 
 private:
-    QTimer *timer;
+//    QTimer *timer;
     QMutex *mutex;
     TaskInfo *taskInfo;
 
+    QMap<QByteArray, QString> sourceFilesHashList;
     QMap<QString, QByteArray> sourceFilesList;
-    QMap<QString, QByteArray> copyFilesList;
 
-    void startTimer();
+
+//    void startTimer();
     void waitTime();
 
     void debugTaskInfo();
 
-    void createFileList(const QString &_path);
+//    void createFileList(const QString &_path);
     void analizeCopyFolder();
     QByteArray getHash(const QString &_path);
 
     void prepareCopyDir();
     void mirrorCopy(const QString &_path);
+    void mirrorAnalyze(const QString &_path); // Проверяет на удаленные, перемещённые и переименованные файлы. Если файлы перемещены, они так же перемещаются в копии. Если удалены или переименованы - копии файлов отправялются в папку Back_In_Time
 
     // QRunnable interface
 public:
