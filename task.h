@@ -63,16 +63,20 @@ private:
     QMutex *mutex;
     TaskInfo *taskInfo;
 
-    QMap<QString, QByteArray> filesList;
+    QMap<QString, QByteArray> sourceFilesList;
+    QMap<QString, QByteArray> copyFilesList;
 
     void startTimer();
     void waitTime();
 
     void debugTaskInfo();
 
-    void createFileList();
+    void createFileList(const QString &_path);
     void analizeCopyFolder();
-    QByteArray getHash(QString _path);
+    QByteArray getHash(const QString &_path);
+
+    void prepareCopyDir();
+    void mirrorCopy(const QString &_path);
 
     // QRunnable interface
 public:

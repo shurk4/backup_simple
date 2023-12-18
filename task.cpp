@@ -53,12 +53,29 @@ void Task::debugTaskInfo()
     mutex->unlock();
 }
 
-void Task::createFileList()
+void Task::createFileList(const QString &_path)
 {
-    taskInfo->sourcePath;
+    qDebug() << "Crate file list";
+    QDir sourceDir(_path);
+    QFileInfoList infoList = sourceDir.entryInfoList(QDir::AllEntries | QDir::NoDotAndDotDot);
+
+    for(const auto &i : infoList)
+    {
+        if(i.isDir())
+        {
+            createFileList(i.absoluteFilePath());
+        }
+        else
+        {
+            qDebug() << i.absoluteFilePath();
+            qDebug() << i.absoluteFilePath().remove(taskInfo->sourcePath);
+            qDebug() << taskInfo->copyPath + i.absoluteFilePath().remove(taskInfo->sourcePath);
+            qDebug();
+        }
+    }
 }
 
-QByteArray Task::getHash(QString _path)
+QByteArray Task::getHash(const QString &_path)
 {
     QFile file(_path);
     int bufSize = file.size();
@@ -74,6 +91,95 @@ QByteArray Task::getHash(QString _path)
     return QByteArray();
 }
 
+void Task::prepareCopyDir()
+{
+    if(!QDir(taskInfo->copyPath + "/mirror").exists())
+    {
+        QDir().mkdir(taskInfo->copyPath + "/mirror");
+    }
+
+    if(!QDir(taskInfo->copyPath + "/Back_In_Time").exists())
+    {
+        QDir().mkdir(taskInfo->copyPath + "/Back_In_Time");
+    }
+}
+
+void Task::mirrorCopy(const QString &_path)
+{
+    qDebug() << "Mirror copy mirrorCopy:";
+    QDir sourceDir(_path);
+    QFileInfoList infoList = sourceDir.entryInfoList(QDir::AllEntries | QDir::NoDotAndDotDot);
+
+    for(const auto &i : infoList)
+    {
+        if(i.isDir())
+        {
+            qDebug() << "Is dir: " << i.absoluteFilePath();
+            QString copySubDir(taskInfo->copyPath+ "/mirror" + i.absoluteFilePath().remove(taskInfo->sourcePath));
+            qDebug() << "copySubDir - " << copySubDir;
+            if(!QDir(copySubDir).exists())
+            {
+                QDir().mkdir(copySubDir);
+                qDebug() << "Dir not exist - created!";
+            }
+
+            mirrorCopy(i.absoluteFilePath());
+        }
+        else
+        {
+            qDebug() << i.absoluteFilePath();
+            qDebug() << i.absoluteFilePath().remove(taskInfo->sourcePath);
+            qDebug() << taskInfo->copyPath + i.absoluteFilePath().remove(taskInfo->sourcePath);
+            qDebug() << "lastModified time: " << i.lastModified().toLocalTime().toString();
+            qDebug();
+
+            QString sourceFile(i.absoluteFilePath());
+            QString copyFile(taskInfo->copyPath + "/mirror" + i.absoluteFilePath().remove(taskInfo->sourcePath));
+            qDebug() << "copyFile - " << copyFile;
+            if(QFile(copyFile).exists())
+            {
+                if(i.lastModified() > QFileInfo(copyFile).lastModified())
+                {
+                    qDebug() << "i.lastModified() > QFileInfo(copyFile).lastModified()";
+
+                    // Folder with file name
+                    QString mirrorCopyPath = taskInfo->copyPath + "/Back_In_Time/" + i.fileName();
+                    qDebug() << mirrorCopyPath;
+                    if(!QDir(mirrorCopyPath).exists())
+                    {
+                        // !!! УДАЛИТЬ СТАРЫЕ ЛИШНИЕ КОПИИ. КОЛИЧЕСТВО ХРАНИМЫХ КОПИЙ БРАТЬ ИЗ ПЕРЕМЕННОЙ КОЛИЧЕСТВО КОПИЙ
+
+                        QDir().mkdir(mirrorCopyPath);
+                    }
+
+                    // Folder with change date
+                    mirrorCopyPath += "/" + i.lastModified().toLocalTime().toString("ddMMyyyy_hhmm");
+                    if(!QDir(mirrorCopyPath).exists())
+                    {
+                        // !!! УДАЛИТЬ СТАРЫЕ ЛИШНИЕ КОПИИ. КОЛИЧЕСТВО ХРАНИМЫХ КОПИЙ БРАТЬ ИЗ ПЕРЕМЕННОЙ КОЛИЧЕСТВО КОПИЙ
+
+                        QDir().mkdir(mirrorCopyPath);
+                    }
+
+                    mirrorCopyPath += "/" + i.fileName();
+
+                    // Копирование файла из копии в хранилище Back_in_time
+                    QFile().copy(copyFile, mirrorCopyPath);
+                    // Удаление старой копии файла
+                    QFile().remove(copyFile);
+                    // Копирование основного файла в зеркало
+                    QFile().copy(sourceFile, copyFile);
+                }
+            }
+            else
+            {
+                QFile().copy(sourceFile, copyFile);
+                qDebug() << "File copy is created!";
+            }
+        }
+    }
+}
+
 void Task::run()
 {
     mutex->lock();
@@ -85,6 +191,9 @@ void Task::run()
 
     debugTaskInfo();
     waitTime();
+
+    prepareCopyDir();
+    mirrorCopy(taskInfo->sourcePath);
 
     taskInfo->proceed = false;
     taskInfo->lastComplite = QDateTime::currentDateTime();
