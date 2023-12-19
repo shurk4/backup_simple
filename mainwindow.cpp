@@ -72,7 +72,8 @@ void MainWindow::showTask(int row)
     settings.beginGroup(taskName);
     ui->labelName->setText(taskName);
     ui->labelSourcePath->setText(settings.value("sourcePath").toString());
-    ui->labelCopyPath->setText(settings.value("copyPath").toByteArray());
+    ui->labelCopyPath->setText(settings.value("copyPath").toString());
+    ui->labelBITPath->setText(settings.value("bitPath").toString());
     lineEditTaskName->setText(taskName);
     setDays(settings.value("days").toInt());
     ui->labelDays->setText(getDaysString(settings.value("days").toInt()));
@@ -102,6 +103,7 @@ void MainWindow::writeReg()
         settings.beginGroup(lineEditTaskName->text());
             settings.setValue("sourcePath", ui->labelSourcePath->text());
             settings.setValue("copyPath", ui->labelCopyPath->text());
+            settings.setValue("bitPath", ui->labelBITPath->text());
             settings.setValue("days", getSelectedDays());
             settings.setValue("type", getSelectedType());
             settings.setValue("copysNum", lineEditCopyNum->text().toInt());
@@ -114,6 +116,31 @@ void MainWindow::writeReg()
     emit shedulerUpdate();
 }
 
+bool MainWindow::taskConfigured()
+{
+    if(ui->labelSourcePath->text() == "-" && ui->labelCopyPath->text() == "-") return false;
+    if(!daysChecked()) return false;
+    if((ui->pushButtonTypeCopy->isChecked() || ui->labelBITPath->text() != "-") && lineEditCopyNum->text().toInt() == 0) return false;
+
+    return true;
+}
+
+bool MainWindow::daysChecked()
+{
+    if(ui->pushButtonDayAll->isChecked() ||
+        ui->pushButtonDay1->isChecked() ||
+        ui->pushButtonDay2->isChecked() ||
+        ui->pushButtonDay3->isChecked() ||
+        ui->pushButtonDay4->isChecked() ||
+        ui->pushButtonDay5->isChecked() ||
+        ui->pushButtonDay6->isChecked() ||
+        ui->pushButtonDay7->isChecked())
+    {
+        return true;
+    }
+    return false;
+}
+
 void MainWindow::showTasksTable()
 {
     QSettings settings("ShurkSoft", "Simple BackUp");
@@ -122,8 +149,8 @@ void MainWindow::showTasksTable()
     QStringList keys = settings.childGroups();
 
     ui->tableWidget->setRowCount(keys.size());
-    ui->tableWidget->setColumnCount(7);
-    ui->tableWidget->setHorizontalHeaderLabels(QStringList() << " " << "Имя" << "Пусть источник" << "Путь копии" << "Дни" << "Время" << "Тип");
+    ui->tableWidget->setColumnCount(8);
+    ui->tableWidget->setHorizontalHeaderLabels(QStringList() << " " << "Имя" << "Пусть источник" << "Путь копии" << "Дни" << "Время" << "Тип" << "Папка времени");
     ui->tableWidget->setColumnWidth(0, 5);
     ui->tableWidget->setColumnWidth(1, 60);
     ui->tableWidget->setColumnWidth(2, 110);
@@ -131,6 +158,7 @@ void MainWindow::showTasksTable()
     ui->tableWidget->setColumnWidth(4, 100);
     ui->tableWidget->setColumnWidth(5, 45);
     ui->tableWidget->setColumnWidth(6, 60);
+    ui->tableWidget->setColumnWidth(7, 110);
     for(int i = 0 ; i < keys.size(); i++)
     {
         settings.beginGroup(keys[i]);
@@ -171,6 +199,11 @@ void MainWindow::showTasksTable()
         item->setText(getTypeString(settings.value("type").toInt()));
         ui->tableWidget->setItem(i, 6, item);
 
+        item = new QTableWidgetItem();
+        item->setText(settings.value("bitPath").toString());
+        item->setToolTip(settings.value("bitPath").toString());
+        ui->tableWidget->setItem(i, 7, item);
+
         settings.endGroup();
     }
 }
@@ -178,9 +211,12 @@ void MainWindow::showTasksTable()
 void MainWindow::clearTaskInfo()
 {
     ui->labelName->clear();
-    ui->labelSourcePath->clear();
-    ui->labelCopyPath->clear();
+    ui->labelSourcePath->setText("-");
+    ui->labelCopyPath->setText("-");
+    ui->labelBITPath->setText("-");
     ui->labelDays->clear();
+    ui->lineEditH->setText("00");
+    ui->lineEditM->setText("00");
     lineEditTaskName->clear();
 }
 
@@ -337,7 +373,7 @@ void MainWindow::setDays(int days)
 
     if(days & ALL)
     {
-        ui->pushButtonDay1->setChecked(true);
+        ui->pushButtonDayAll->setChecked(true);
         return;
     }
 
@@ -433,11 +469,21 @@ void MainWindow::on_actionSourcePath_triggered()
 
 void MainWindow::on_actionCopyPath_triggered()
 {
-    ui->labelCopyPath->setText(getPath("ВЫбирите папку для сохранения копий."));
+    ui->labelCopyPath->setText(getPath("Выбирите папку для сохранения копий."));
+}
+
+void MainWindow::on_pushButtonBITPath_clicked()
+{
+    ui->labelBITPath->setText(getPath("Выбирите папку времени."));
 }
 
 void MainWindow::on_actionAddTask_triggered()
 {
+    if(!taskConfigured())
+    {
+        QMessageBox::information(this, "Задание не настроено!", "Не сохранено! Задание не настроено!");
+        return;
+    }
     writeReg();
 }
 

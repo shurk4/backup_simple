@@ -20,15 +20,16 @@ void Sheduler::debugSettings()
     for(const auto &i : tasks)
     {
         qDebug() << "name: " << i.name << " ";
-        qDebug() <<  "sourcePath: " << i.sourcePath << " ";
-        qDebug() <<  "copyPath: " << i.copyPath << " ";
-        qDebug() <<  "type: " << i.type << " ";
-        qDebug() <<  "days: " << i.days << " ";
-        qDebug() <<  "copyNum: " << i.copyNum << " ";
-        qDebug() <<  "time: " << i.time.toString("hh:mm") << " ";
-        qDebug() <<  "lastRun: " << i.lastRun.toString() << " ";
-        qDebug() <<  "lastComplite: " << i.lastComplite.toString() << " ";
-        qDebug() <<  "proceed: " << i.proceed << " ";
+        qDebug() << "sourcePath: " << i.sourcePath << " ";
+        qDebug() << "copyPath: " << i.copyPath << " ";
+        qDebug() << "bitPath: " << i.backInTimePath;
+        qDebug() << "type: " << i.type << " ";
+        qDebug() << "days: " << i.days << " ";
+        qDebug() << "copyNum: " << i.copyNum << " ";
+        qDebug() << "time: " << i.time.toString("hh:mm") << " ";
+        qDebug() << "lastRun: " << i.lastRun.toString() << " ";
+        qDebug() << "lastComplite: " << i.lastComplite.toString() << " ";
+        qDebug() << "proceed: " << i.proceed << " ";
         qDebug();
     }
 }
@@ -36,6 +37,7 @@ void Sheduler::debugSettings()
 void Sheduler::update()
 {
     qDebug() << "Update sheduler in thread: " << QThread::currentThreadId();
+    tasks.clear();
     updateSettings();
     checkTasks();
     debugSettings();
@@ -48,11 +50,6 @@ void Sheduler::saveRegSlot()
     for(const auto i : tasks)
     {
         settings.beginGroup(i.name);
-        settings.setValue("sourcePath", i.sourcePath);
-        settings.setValue("copyPath", i.copyPath);
-        settings.setValue("days", i.days);
-        settings.setValue("type", i.type);
-        settings.setValue("copysNum", i.copyNum);
         settings.setValue("time", i.time);
         settings.setValue("lastRun", i.lastRun);
         settings.setValue("lastComplite", i.lastComplite);
@@ -90,6 +87,7 @@ void Sheduler::updateSettings()
         tasks[i].name = i;
         tasks[i].sourcePath = settings.value("sourcePath").toString();
         tasks[i].copyPath = settings.value("copyPath").toString();
+        tasks[i].backInTimePath = settings.value("bitPath").toString();
         tasks[i].days = settings.value("days").toInt();
         tasks[i].type = settings.value("type").toInt();
         tasks[i].copyNum = settings.value("copysNum").toInt();

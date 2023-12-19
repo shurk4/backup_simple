@@ -1,12 +1,7 @@
 /*
-Остановился на создании хешей для проверки перемещения или удаления файла.
-Задуманная логика:
-    во время основного прохода зеркального копирования
-    проверяем текущий исходные файл на наличие его в списках, если его нет, добавляем.
 
-    во время проверки зеркальной коппии на удалённые, перемещённые и переименованные файлы
-    проверяем нет ли хеша этого файла в списке хешей, если есть - переносим копии по новому пути, если нет - значит файл был удалён, создаём его копию в папку времени
-
+Закончил зеркальное копирование
+Проверить ещё раз в т.ч. удаление, перемещение, переименование, изменение
 
 */
 
@@ -23,6 +18,7 @@
 #include <QDir>
 #include <QFile>
 #include <QMap>
+#include <QSet>
 #include <QCryptographicHash>
 
 enum Type
@@ -48,6 +44,7 @@ struct TaskInfo
     QString name;
     QString sourcePath;
     QString copyPath;
+    QString backInTimePath; // В конфиге bitPath
     int days;
     int type;
     int copyNum;
@@ -75,8 +72,11 @@ private:
     QMutex *mutex;
     TaskInfo *taskInfo;
 
-    QMap<QByteArray, QString> sourceFilesHashList;
-    QMap<QString, QByteArray> sourceFilesList;
+    QSet<QString> sourceFiles; // Заполняется именами папок и файлов (без учёта указанного пути в информации о задании) при зеркальном копировании для дальнейшего анализа папки с копией
+
+//    QMap<QByteArray, QString> sourceFilesHashList;
+//    QMap<QString, QByteArray> sourceFilesList;
+//    QMap<QString, QByteArray> sourceFilesListSaved;
 
 
 //    void startTimer();
@@ -85,12 +85,18 @@ private:
     void debugTaskInfo();
 
 //    void createFileList(const QString &_path);
-    void analizeCopyFolder();
+//    void analizeCopyFolder();
     QByteArray getHash(const QString &_path);
+
+
+    // создаёт подпапки в указанной директории, принимает целевую директорию и путь, который надо создать в целевой директории
+    void createDirs(const QString &_targetPath);
 
     void prepareCopyDir();
     void mirrorCopy(const QString &_path);
     void mirrorAnalyze(const QString &_path); // Проверяет на удаленные, перемещённые и переименованные файлы. Если файлы перемещены, они так же перемещаются в копии. Если удалены или переименованы - копии файлов отправялются в папку Back_In_Time
+
+    void moveToBackInTime(QFileInfo _fileInfo, QString _sourcePath);
 
     // QRunnable interface
 public:

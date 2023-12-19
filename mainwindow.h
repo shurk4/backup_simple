@@ -93,6 +93,8 @@ private slots:
 
     void on_pushButtonUpdate_clicked();
 
+    void on_pushButtonBITPath_clicked();
+
 public slots:
     void update();
 
@@ -122,6 +124,8 @@ private:
 
     void readReg();
     void writeReg();
+    bool taskConfigured();
+    bool daysChecked();
     void showTasksTable();
 
     void clearTaskInfo();
